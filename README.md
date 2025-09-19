@@ -1,7 +1,7 @@
 # Documentation Generator
 
-[![GitHub API](https://cdn.simpleicons.org/github)](https://github.com/settings/personal-access-tokens)
-[![Gemini API](https://cdn.simpleicons.org/googlegemini)](https://ai.google.dev/)
+[![GitHub API](https://img.shields.io/badge/GitHub_API-grey?logo=github&logoColor=white)](https://ai.google.dev/)
+[![Gemini API](https://img.shields.io/badge/Gemini_API-purple?logo=googlegemini&logoColor=white)](https://ai.google.dev/)
 [![Next.js](https://img.shields.io/badge/Next.js-black?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-teal?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
