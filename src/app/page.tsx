@@ -1,103 +1,143 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import { useState } from 'react';
+import { marked } from 'marked';
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+interface DocumentationResult {
+    success: boolean;
+    documentation?: string;
+    error?: string;
 }
+
+export default function Page(){
+    const [githubLink, setGithubLink] = useState<string>('');
+    const [output, setOutput] = useState<string>('Documentation will appear here...');
+    const [loading, setLoading] = useState<boolean>(false);
+
+    const postLink = async (link: string): Promise<void> => {
+        setLoading(true);
+        setOutput('');
+
+        try {
+            const response = await fetch('/api/docgen', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ githublink: link })
+            });
+
+            const result: DocumentationResult = await response.json();
+
+            if (result.success) {
+                setOutput(result.documentation || '');
+            } else {
+                setOutput(`Error: ${result.error}`);
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
+            setOutput(`Error: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const githubDoc = async (): Promise<void> => {
+        if (!githubLink) {
+            alert("Please enter a GitHub link");
+            return;
+        }
+
+        await postLink(githubLink);
+    };
+
+    const copyToClipboard = (): void => {
+        navigator.clipboard.writeText(output).then(() => {
+            alert('Documentation copied to clipboard!');
+        });
+    };
+
+    const downloadDocs = (): void => {
+        const blob = new Blob([output], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'documentation.md';
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    // Convert markdown to HTML
+    const getMarkdownAsHtml = (): string => {
+        return marked(output) as string;
+    };
+
+    return (
+        <div className="font-sans max-w-screen-xl mx-auto p-5 max-h-screen">
+            <h1 className="text-3xl font-bold mb-6">🚀 Code Documentation Generator</h1>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="bg-white p-5 rounded-lg shadow-md">
+                    <h2 className="text-xl font-semibold mb-2">Input GitHub Repository</h2>
+                    <p className="text-gray-600 mb-2">Provide the URL to a public GitHub repository:</p>
+
+                    <input
+                        type="text"
+                        id="githublink"
+                        placeholder="GitHub repository link:"
+                        className="w-full p-2 my-2 border border-gray-300 rounded"
+                        value={githubLink}
+                        onChange={(e) => setGithubLink(e.target.value)}
+                    />
+
+                    <button
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2 transition-colors"
+                        onClick={githubDoc}
+                    >
+                        Generate Documentation
+                    </button>
+
+                    <div className={`text-center text-gray-600 mt-4 ${loading ? 'block' : 'hidden'}`}>
+                        <p>⏳ Generating documentation...</p>
+                    </div>
+
+                    <div className="">
+                        <p className="text-sm text-gray-500 mt-4">Note: This may take a few minutes depending on the repository size.</p>
+                    </div>
+
+                    <div className="">
+                        <p className="text-sm text-gray-500 mt-4">Disclaimer: This app uses AI to generate the documentation. While it does its
+                            best to be accurate, please review the output for any potential errors or omissions. You are solely responsible for 
+                            any documentation generated using this tool that you choose to use.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-lg shadow-md">
+                    <h2 className="text-xl font-semibold mb-4">Generated Documentation</h2>
+
+                    <div
+                        className="markdown-content bg-gray-50 p-4 rounded max-h-[75vh] overflow-y-auto prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: getMarkdownAsHtml() }}
+                    />
+
+                    <div className="flex gap-2 mt-4">
+                        <button
+                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                            onClick={copyToClipboard}
+                        >
+                            📋 Copy to Clipboard
+                        </button>
+
+                        <button
+                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                            onClick={downloadDocs}
+                        >
+                            📥 Download
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
